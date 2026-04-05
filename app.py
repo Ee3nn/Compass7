@@ -2,12 +2,20 @@ import os
 from flask import Flask, send_from_directory, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+from PIL import Image
 
 app = Flask(__name__, static_folder="static")
 app.secret_key = os.urandom(24)
 
+# Configure Uploads
+UPLOAD_FOLDER = 'static/uploads/avatars'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 # Database Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'users.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -16,6 +24,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
+    profile_pic = db.Column(db.String(200), nullable=True)
 
 with app.app_context():
     db.create_all()
@@ -23,6 +32,39 @@ with app.app_context():
 @app.route("/")
 def index():
     return send_from_directory("static", "index.html")
+
+@app.route("/avatar/upload", methods=['POST'])
+def upload_avatar():
+    if 'user_id' not in session:
+        return jsonify({"message": "Unauthorized"}), 401
+    
+    if 'avatar' not in request.files:
+        return jsonify({"message": "No file"}), 400
+    
+    file = request.files['avatar']
+    if file.filename == '':
+        return jsonify({"message": "No selected file"}), 400
+    
+    user = db.session.get(User, session['user_id'])
+    filename = secure_filename(f"user_{user.id}.jpg")
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
+    try:
+        img = Image.open(file)
+        width, height = img.size
+        size = min(width, height)
+        left = (width - size) / 2
+        top = (height - size) / 2
+        right = (width + size) / 2
+        bottom = (height + size) / 2
+        img = img.crop((left, top, right, bottom))
+        img.convert('RGB').save(filepath, "JPEG")
+        
+        user.profile_pic = filename
+        db.session.commit()
+        return jsonify({"message": "Avatar uploaded", "url": f"/static/uploads/avatars/{filename}"}), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
 
 @app.route("/register", methods=['POST'])
 def register():
@@ -43,7 +85,7 @@ def register():
 @app.route("/login", methods=['POST'])
 def login():
     data = request.json
-    login_id = data.get('loginId') # username or email
+    login_id = data.get('loginId')
     password = data.get('password')
 
     user = User.query.filter((User.username == login_id) | (User.email == login_id)).first()
@@ -70,7 +112,8 @@ def get_profile():
         
     return jsonify({
         "username": user.username,
-        "email": user.email
+        "email": user.email,
+        "profile_pic": f"/static/uploads/avatars/{user.profile_pic}" if user.profile_pic else None
     }), 200
 
 @app.route("/profile/update", methods=['POST'])

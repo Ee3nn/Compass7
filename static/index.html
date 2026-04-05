@@ -136,9 +136,20 @@
         <div id="profileModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
             <div class="w-full max-w-md glass border border-white/10 rounded-[2.5rem] p-8 relative transition-theme">
                 <button id="closeProfile" class="absolute top-6 right-6 p-2 rounded-full hover:bg-white/5 opacity-50"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                
+                <div class="flex flex-col items-center mb-8">
+                    <div id="avatarContainer" class="w-24 h-24 rounded-full bg-white/5 border-2 border-dashed border-white/20 flex items-center justify-center cursor-pointer overflow-hidden hover:border-indigo-500 transition-all group relative">
+                        <img id="profilePreview" class="w-full h-full object-cover hidden">
+                        <div id="avatarPlaceholder" class="flex flex-col items-center opacity-40 group-hover:opacity-100 transition-opacity">
+                            <svg class="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        </div>
+                        <input type="file" id="avatarInput" class="hidden" accept="image/*">
+                    </div>
+                    <p class="text-[10px] uppercase font-bold text-slate-500 tracking-widest mt-3">Click to change avatar</p>
+                </div>
 
-                <h2 class="text-3xl font-black mb-2">My Profile</h2>
-                <p class="text-slate-500 mb-8 text-sm">Manage your ManageIB account</p>
+                <h2 class="text-3xl font-black mb-2 text-center">My Profile</h2>
+                <p class="text-slate-500 mb-8 text-sm text-center">Manage your ManageIB account</p>
 
                 <div class="space-y-6">
                     <div class="space-y-2">
@@ -162,11 +173,12 @@
                 </div>
             </div>
         </div>
-            <footer class="text-center py-28 opacity-30 transition-theme">
+
+        <footer class="text-center py-28 opacity-30 transition-theme">
             <p class="text-[10px] uppercase tracking-[0.5em] font-black italic">Accuracy Protocol Active · Ver 2.5 (HTML)</p>
-            </footer>
-            </main>
-            </body>
+        </footer>
+    </main>
+
     <script>
         const TIMETABLE_DATA = {
             "timetable": {
@@ -404,12 +416,12 @@
 
             const link = document.createElement('a');
             link.href = canvas.toDataURL('image/png');
-            link.download = 'EduPlus_Lockscreen.png';
+            link.download = 'ManageIB_Lockscreen.png';
             link.click();
         };
 
         document.getElementById('btnCalendar').onclick = () => {
-            let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//EduPlus//EN\n";
+            let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//ManageIB//EN\n";
             const now = new Date();
             const monday = new Date(now.setDate(now.getDate() + ((1 + 7 - now.getDay()) % 7 || 7)));
             const dayMap = { "Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3, "Friday": 4 };
@@ -462,6 +474,18 @@
                 document.getElementById('profileUsername').value = data.username;
                 document.getElementById('profileEmail').value = data.email;
                 document.getElementById('profilePassword').value = '';
+                
+                const preview = document.getElementById('profilePreview');
+                const placeholder = document.getElementById('avatarPlaceholder');
+                if (data.profile_pic) {
+                    preview.src = data.profile_pic;
+                    preview.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                } else {
+                    preview.classList.add('hidden');
+                    placeholder.classList.remove('hidden');
+                }
+                
                 profileModal.classList.remove('hidden');
             } else {
                 localStorage.removeItem('mi_user');
@@ -571,10 +595,41 @@
             }
         };
 
+        // Avatar Upload Logic
+        const avatarContainer = document.getElementById('avatarContainer');
+        const avatarInput = document.getElementById('avatarInput');
+        
+        avatarContainer.onclick = () => avatarInput.click();
+        
+        avatarInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('avatar', file);
+            
+            const res = await fetch('/avatar/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                const preview = document.getElementById('profilePreview');
+                const placeholder = document.getElementById('avatarPlaceholder');
+                preview.src = data.url;
+                preview.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            } else {
+                const data = await res.json();
+                alert(data.message);
+            }
+        };
+
         // Init
         const hrSelect = document.getElementById('homeroomSelect');
         hrSelect.innerHTML = `<option>${TIMETABLE_DATA.timetable.class}</option>`;
         renderElectives();
     </script>
 </body>
-</html>>
+</html>
