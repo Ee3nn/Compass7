@@ -54,12 +54,14 @@ def convert_image_to_json(image_path, output_path="timetable_data.json"):
 
     print(f"Processing image: {image_path}...")
     
+    response = None
     try:
         # Load image
         img = Image.open(image_path)
         
         # Initialize model
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        # Using a model that might have more quota available
+        model = genai.GenerativeModel("gemini-flash-latest")
         
         # Generate content
         response = model.generate_content([PROMPT, img])
@@ -80,7 +82,7 @@ def convert_image_to_json(image_path, output_path="timetable_data.json"):
         
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-        if hasattr(response, 'text'):
+        if response and hasattr(response, 'text'):
             print("Model response was:")
             print(response.text)
 
