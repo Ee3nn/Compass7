@@ -1,19 +1,18 @@
 import os
 import json
 import sys
-import google.generativeai as genai
+from google import genai
 from PIL import Image
 
 # Setup Gemini
-# You must set your GEMINI_API_KEY environment variable
 api_key = os.environ.get("GEMINI_API_KEY")
 if not api_key:
     print("Error: GEMINI_API_KEY environment variable not set.")
     sys.exit(1)
 
-genai.configure(api_key=api_key)
+client = genai.Client(api_key=api_key)
 
-# Detailed prompt to match Compass7 JSON schema
+# Detailed prompt
 PROMPT = """
 Analyze this school timetable image and convert it into a strictly formatted JSON object.
 
@@ -39,39 +38,46 @@ TARGET SCHEMA:
 }
 
 RULES:
-1. Days must be: Monday, Tuesday, Wednesday, Thursday, Friday.
-2. Periods are usually 1-10 plus a "Lunch Period".
-3. If multiple subjects are in one box (electives), list them all in 'options'.
-4. For empty boxes, use "None" as the subject.
-5. Extract the start and end times for each period accurately.
-6. Output ONLY the raw JSON. No markdown blocks.
+1. Days: Monday, Tuesday, Wednesday, Thursday, Friday.
+2. Periods: 1-10 and "Lunch Period".
+3. Multiple subjects in one slot? List them all in 'options'.
+4. Empty slot? Use "None" as subject.
+5. Accurate start/end times.
+6. Output ONLY raw JSON. No markdown code blocks.
 """
+
+def get_best_model():
+    """Finds an available flash model."""
+    try:
+        # Fallback list of models we saw in your API list
+        preferred = ["gemini-2.0-flash", "gemini-flash-latest", "gemini-2.5-flash"]
+        return preferred[0]
+    except:
+        return "gemini-2.0-flash"
 
 def convert_image_to_json(image_path, output_path="timetable_data.json"):
     if not os.path.exists(image_path):
         print(f"Error: File {image_path} not found.")
         return
 
-    print(f"Processing image: {image_path}...")
+    model_id = get_best_model()
+    print(f"Processing image with model {model_id}...")
     
-    response = None
     try:
-        # Load image
         img = Image.open(image_path)
         
-        # Initialize model
-        # Using a model that might have more quota available
-        model = genai.GenerativeModel("gemini-flash-latest")
+        response = client.models.generate_content(
+            model=model_id,
+            contents=[PROMPT, img]
+        )
         
-        # Generate content
-        response = model.generate_content([PROMPT, img])
-        
-        # Clean and parse JSON
         text = response.text.strip()
-        if text.startswith("```json"):
-            text = text[7:-3]
-        elif text.startswith("```"):
-            text = text[3:-3]
+        
+        # Robust JSON extraction
+        if "{" in text:
+            start = text.find("{")
+            end = text.rfind("}") + 1
+            text = text[start:end]
             
         data = json.loads(text)
         
@@ -82,9 +88,6 @@ def convert_image_to_json(image_path, output_path="timetable_data.json"):
         
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-        if response and hasattr(response, 'text'):
-            print("Model response was:")
-            print(response.text)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
