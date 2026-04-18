@@ -445,11 +445,34 @@
                 `;
                 grid.appendChild(card);
             });
+
+            // Toggle Export Buttons
+            const allSelected = groups.every(g => selectedElectives[g.id]);
+            const exportBtns = [document.getElementById('btnSaveImage'), document.getElementById('btnCalendar')];
+            exportBtns.forEach(btn => {
+                if (allSelected) {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-40', 'cursor-not-allowed', 'grayscale');
+                } else {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-40', 'cursor-not-allowed', 'grayscale');
+                }
+            });
         };
 
-        window.handleSelect = (groupId, subject) => {
+        const saveProgress = async () => {
+            if (!currentUser) return;
+            await fetch('/profile/save_electives', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ electives: JSON.stringify(selectedElectives) })
+            });
+        };
+
+        window.handleSelect = async (groupId, subject) => {
             selectedElectives[groupId] = subject;
             renderElectives();
+            await saveProgress();
         };
 
         // 4. Export Logic
@@ -579,6 +602,11 @@
                 document.getElementById('profileEmail').value = data.email;
                 document.getElementById('profilePassword').value = '';
                 
+                if (data.electives) {
+                    selectedElectives = JSON.parse(data.electives);
+                    renderElectives();
+                }
+
                 const preview = document.getElementById('profilePreview');
                 const placeholder = document.getElementById('avatarPlaceholder');
                 if (data.profile_pic) {
@@ -649,6 +677,12 @@
                 currentUser = data.username;
                 localStorage.setItem('mi_user', currentUser);
                 authBtn.querySelector('span').innerText = currentUser;
+                
+                if (data.electives) {
+                    selectedElectives = JSON.parse(data.electives);
+                    renderElectives();
+                }
+
                 authModal.classList.add('hidden');
             } else {
                 alert(data.message);

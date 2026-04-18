@@ -34,6 +34,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     profile_pic = db.Column(db.String(200), nullable=True)
+    selected_electives = db.Column(db.Text, nullable=True)
 
 with app.app_context():
     db.create_all()
@@ -81,6 +82,17 @@ def upload_avatar():
     except Exception as e:
         return jsonify({"message": str(e)}), 500
 
+@app.route("/profile/save_electives", methods=['POST'])
+def save_electives():
+    if 'user_id' not in session:
+        return jsonify({"message": "Unauthorized"}), 401
+    
+    user = db.session.get(User, session['user_id'])
+    data = request.json
+    user.selected_electives = data.get('electives')
+    db.session.commit()
+    return jsonify({"message": "Electives saved"}), 200
+
 @app.route("/register", methods=['POST'])
 def register():
     data = request.json
@@ -113,7 +125,11 @@ def login():
 
     if user and check_password_hash(user.password_hash, password):
         session['user_id'] = user.id
-        return jsonify({"message": "Login successful", "username": user.username}), 200
+        return jsonify({
+            "message": "Login successful", 
+            "username": user.username,
+            "electives": user.selected_electives
+        }), 200
     
     return jsonify({"message": "Invalid credentials"}), 401
 
@@ -134,7 +150,8 @@ def get_profile():
     return jsonify({
         "username": user.username,
         "email": user.email,
-        "profile_pic": f"/static/uploads/avatars/{user.profile_pic}" if user.profile_pic else None
+        "profile_pic": f"/static/uploads/avatars/{user.profile_pic}" if user.profile_pic else None,
+        "electives": user.selected_electives
     }), 200
 
 @app.route("/profile/update", methods=['POST'])
