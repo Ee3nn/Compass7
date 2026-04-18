@@ -641,51 +641,67 @@
         switchToLogin.onclick = () => { registerForm.classList.add('hidden'); loginForm.classList.remove('hidden'); };
 
         document.getElementById('submitRegister').onclick = async () => {
-            const username = document.getElementById('regUsername').value;
-            const email = document.getElementById('regEmail').value;
-            const password = document.getElementById('regPassword').value;
+            try {
+                const username = document.getElementById('regUsername').value;
+                const email = document.getElementById('regEmail').value;
+                const password = document.getElementById('regPassword').value;
 
-            if (!username || !email || !password) return alert('Fill all fields');
+                if (!username || !email || !password) return alert('Fill all fields');
 
-            const res = await fetch('/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, email, password })
-            });
+                const res = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
 
-            const data = await res.json();
-            if (res.ok) {
-                alert('Account created! Please sign in.');
-                switchToLogin.click();
-            } else {
-                alert(data.message);
+                const data = await res.json();
+                if (res.ok) {
+                    alert('Account created! Please sign in.');
+                    switchToLogin.click();
+                } else {
+                    alert(data.message || 'Registration failed');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Network error during registration');
             }
         };
 
         document.getElementById('submitLogin').onclick = async () => {
-            const loginId = document.getElementById('loginId').value;
-            const password = document.getElementById('loginPassword').value;
+            try {
+                const loginId = document.getElementById('loginId').value;
+                const password = document.getElementById('loginPassword').value;
 
-            const res = await fetch('/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ loginId, password })
-            });
+                if (!loginId || !password) return alert('Fill all fields');
 
-            const data = await res.json();
-            if (res.ok) {
-                currentUser = data.username;
-                localStorage.setItem('mi_user', currentUser);
-                authBtn.querySelector('span').innerText = currentUser;
-                
-                if (data.electives) {
-                    selectedElectives = JSON.parse(data.electives);
-                    renderElectives();
+                const res = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ loginId, password })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    currentUser = data.username;
+                    localStorage.setItem('mi_user', currentUser);
+                    authBtn.querySelector('span').innerText = currentUser;
+                    
+                    if (data.electives) {
+                        try {
+                            selectedElectives = JSON.parse(data.electives);
+                            renderElectives();
+                        } catch (e) {
+                            console.error('Error parsing saved electives', e);
+                        }
+                    }
+
+                    authModal.classList.add('hidden');
+                } else {
+                    alert(data.message || 'Login failed');
                 }
-
-                authModal.classList.add('hidden');
-            } else {
-                alert(data.message);
+            } catch (err) {
+                console.error(err);
+                alert('Network error during login');
             }
         };
 

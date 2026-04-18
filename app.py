@@ -95,43 +95,60 @@ def save_electives():
 
 @app.route("/register", methods=['POST'])
 def register():
-    data = request.json
-    username = data.get('username')
-    email = data.get('email', '').lower()
-    password = data.get('password')
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"message": "Invalid JSON"}), 400
+            
+        username = data.get('username')
+        email = data.get('email', '').lower()
+        password = data.get('password')
 
-    if not username or not email or not password:
-        return jsonify({"message": "All fields are required"}), 400
+        if not username or not email or not password:
+            return jsonify({"message": "All fields are required"}), 400
 
-    if User.query.filter_by(username=username).first():
-        return jsonify({"message": "Username already taken"}), 400
-    
-    if User.query.filter_by(email=email).first():
-        return jsonify({"message": "Email already registered"}), 400
+        if User.query.filter_by(username=username).first():
+            return jsonify({"message": "Username already taken"}), 400
+        
+        if User.query.filter_by(email=email).first():
+            return jsonify({"message": "Email already registered"}), 400
 
-    hashed_pw = generate_password_hash(password)
-    new_user = User(username=username, email=email, password_hash=hashed_pw)
-    db.session.add(new_user)
-    db.session.commit()
-    return jsonify({"message": "User registered successfully"}), 201
+        hashed_pw = generate_password_hash(password)
+        new_user = User(username=username, email=email, password_hash=hashed_pw)
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({"message": "User registered successfully"}), 201
+    except Exception as e:
+        print(f"Registration error: {str(e)}")
+        return jsonify({"message": "Server error during registration"}), 500
 
 @app.route("/login", methods=['POST'])
 def login():
-    data = request.json
-    login_id = data.get('loginId')
-    password = data.get('password')
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"message": "Invalid JSON"}), 400
+            
+        login_id = data.get('loginId')
+        password = data.get('password')
 
-    user = User.query.filter((User.username == login_id) | (User.email == login_id)).first()
+        if not login_id or not password:
+            return jsonify({"message": "Username/Email and Password are required"}), 400
 
-    if user and check_password_hash(user.password_hash, password):
-        session['user_id'] = user.id
-        return jsonify({
-            "message": "Login successful", 
-            "username": user.username,
-            "electives": user.selected_electives
-        }), 200
-    
-    return jsonify({"message": "Invalid credentials"}), 401
+        user = User.query.filter((User.username == login_id) | (User.email == login_id)).first()
+
+        if user and check_password_hash(user.password_hash, password):
+            session['user_id'] = user.id
+            return jsonify({
+                "message": "Login successful", 
+                "username": user.username,
+                "electives": user.selected_electives
+            }), 200
+        
+        return jsonify({"message": "Invalid credentials"}), 401
+    except Exception as e:
+        print(f"Login error: {str(e)}")
+        return jsonify({"message": f"Server error: {str(e)}"}), 500
 
 @app.route("/logout")
 def logout():
