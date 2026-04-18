@@ -332,18 +332,22 @@
         let fontSizeMultiplier = 1.0;
 
         const loadTimetable = async () => {
-            const res = await fetch('/api/timetable');
-            if (res.ok) {
-                TIMETABLE_DATA = await res.json();
-                const hrSelect = document.getElementById('homeroomSelect');
-                if (hrSelect) hrSelect.innerHTML = `<option>${TIMETABLE_DATA.timetable.class}</option>`;
-                renderElectives();
-                
-                // Load into admin editor if admin
-                if (isAdmin) {
-                    const editor = document.getElementById('timetableEditor');
-                    if (editor) editor.value = JSON.stringify(TIMETABLE_DATA, null, 4);
+            try {
+                const res = await fetch('/api/timetable');
+                if (res.ok) {
+                    TIMETABLE_DATA = await res.json();
+                    const hrSelect = document.getElementById('homeroomSelect');
+                    if (hrSelect) hrSelect.innerHTML = `<option>${TIMETABLE_DATA.timetable.class}</option>`;
+                    renderElectives();
+                    
+                    // Load into admin editor if admin
+                    if (isAdmin) {
+                        const editor = document.getElementById('timetableEditor');
+                        if (editor) editor.value = JSON.stringify(TIMETABLE_DATA, null, 4);
+                    }
                 }
+            } catch (err) {
+                console.error("Failed to load timetable", err);
             }
         };
 
@@ -430,6 +434,8 @@
         // 2. Data Initialization
         const getElectiveGroups = () => {
             const groups = new Map();
+            if (!TIMETABLE_DATA || !TIMETABLE_DATA.timetable) return [];
+
             TIMETABLE_DATA.timetable.schedule.forEach(day => {
                 day.periods.forEach(p => {
                     if (p.options.length > 1) {
@@ -450,8 +456,15 @@
         // 3. Rendering
         const renderElectives = () => {
             const grid = document.getElementById('electivesGrid');
+            if (!grid) return;
+
             const groups = getElectiveGroups();
             grid.innerHTML = '';
+
+            if (groups.length === 0 && !TIMETABLE_DATA) {
+                grid.innerHTML = '<div class="col-span-full text-center py-12 opacity-50 font-bold">Initializing configuration...</div>';
+                return;
+            }
 
             groups.forEach(group => {
                 const card = document.createElement('div');
@@ -487,16 +500,21 @@
 
             // Toggle Export Buttons
             const allSelected = groups.every(g => selectedElectives[g.id]);
-            const exportBtns = [document.getElementById('btnSaveImage'), document.getElementById('btnCalendar')];
-            exportBtns.forEach(btn => {
-                if (allSelected) {
-                    btn.disabled = false;
-                    btn.classList.remove('opacity-40', 'cursor-not-allowed', 'grayscale');
-                } else {
-                    btn.disabled = true;
-                    btn.classList.add('opacity-40', 'cursor-not-allowed', 'grayscale');
-                }
-            });
+            const btnSave = document.getElementById('btnSaveImage');
+            const btnCal = document.getElementById('btnCalendar');
+            
+            if (btnSave) {
+                btnSave.disabled = !allSelected;
+                btnSave.classList.toggle('opacity-40', !allSelected);
+                btnSave.classList.toggle('cursor-not-allowed', !allSelected);
+                btnSave.classList.toggle('grayscale', !allSelected);
+            }
+            if (btnCal) {
+                btnCal.disabled = !allSelected;
+                btnCal.classList.toggle('opacity-40', !allSelected);
+                btnCal.classList.toggle('cursor-not-allowed', !allSelected);
+                btnCal.classList.toggle('grayscale', !allSelected);
+            }
         };
 
         const saveProgress = async () => {
@@ -876,9 +894,7 @@
         };
 
         // Init
-        const hrSelect = document.getElementById('homeroomSelect');
-        hrSelect.innerHTML = `<option>${TIMETABLE_DATA.timetable.class}</option>`;
-        renderElectives();
+        loadTimetable();
 
         // Initial state
         switchView('homeView');
