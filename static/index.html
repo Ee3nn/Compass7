@@ -143,7 +143,56 @@
                     <p class="text-slate-500 text-sm">Organize your reflections and track hour distributions efficiently.</p>
                     <div class="absolute top-6 right-8 rotate-12 bg-zinc-800 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter border border-white/10">In Pipeline</div>
                 </div>
+
+                <!-- Admin Console Card -->
+                <button id="adminConsoleCard" onclick="switchView('adminConsole')" class="group p-8 rounded-[2.5rem] border transition-all text-left flex items-center justify-between gap-6 bg-indigo-950/20 border-indigo-500/20 hover:border-indigo-500/50 hover:bg-indigo-950/40 hidden">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 text-indigo-400 mb-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <span class="text-[10px] uppercase font-bold tracking-widest">Admin Portal</span>
+                        </div>
+                        <h3 class="text-2xl font-black mb-2">System Configuration</h3>
+                        <p class="text-slate-500 text-sm leading-relaxed">Modify courses, adjust schedules, and manage institutional data.</p>
+                    </div>
+                    <div class="p-4 rounded-full bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </div>
+                </button>
             </div>
+        </div>
+
+        <!-- Admin Console View -->
+        <div id="adminConsole" class="hidden space-y-8">
+            <button onclick="switchView('homeView')" class="flex items-center gap-2 text-indigo-400 font-bold text-sm mb-10 hover:translate-x-[-4px] transition-transform">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Back to Tools
+            </button>
+
+            <header class="mb-14">
+                <h2 class="text-4xl font-extrabold tracking-tight mb-4 leading-tight">Admin Console</h2>
+                <p class="text-slate-500 text-lg">Directly modify the master timetable configuration.</p>
+            </header>
+
+            <section class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5 text-indigo-500">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        <h3 class="text-sm font-bold uppercase tracking-[0.25em]">Master JSON Config</h3>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="document.getElementById('fileUpload').click()" class="text-[10px] uppercase font-black px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all">Upload File</button>
+                        <input type="file" id="fileUpload" class="hidden" accept=".json" onchange="handleAdminFileUpload(event)">
+                    </div>
+                </div>
+                
+                <div class="relative group">
+                    <textarea id="timetableEditor" class="w-full h-[500px] bg-zinc-950 border border-white/10 rounded-[2rem] p-8 font-mono text-xs leading-relaxed outline-none focus:border-indigo-500 transition-all resize-none shadow-inner" spellcheck="false"></textarea>
+                    <div class="absolute bottom-6 right-6 flex gap-3">
+                        <button onclick="formatJson()" class="px-6 py-3 rounded-xl bg-zinc-900 border border-white/10 text-xs font-bold hover:bg-zinc-800 transition-all">Format</button>
+                        <button onclick="saveTimetable()" class="px-8 py-3 rounded-xl bg-indigo-600 text-white text-xs font-black hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20">Save Changes</button>
+                    </div>
+                </div>
+            </section>
         </div>
 
         <!-- Timetable Tool View -->
@@ -276,97 +325,81 @@
     </main>
 
     <script>
-        const TIMETABLE_DATA = {
-    "timetable": {
-        "class": "IB Grade 10 Class 8",
-        "schedule": [
-            {
-                "day": "Monday",
-                "periods": [
-                    { "period": "1", "time": "8:00 - 8:40", "options": [{ "subject": "IB Lit", "room": "A411" }, { "subject": "IB L&L", "room": "A411" }] },
-                    { "period": "2", "time": "8:45 - 9:25", "options": [{ "subject": "IB Chem1", "room": "A403" }, { "subject": "IB Bio1", "room": "A403" }, { "subject": "IB Phy1", "room": "A403" }] },
-                    { "period": "3", "time": "9:35 - 10:15", "options": [{ "subject": "IB Math", "room": null }] },
-                    { "period": "4", "time": "10:20 - 11:00", "options": [{ "subject": "Nat 信息技术", "room": "HS Theatre" }] },
-                    { "period": "5", "time": "11:05 - 11:55", "options": [{ "subject": "Lunch", "room": null }] },
-                    { "period": "Lunch Period", "time": "12:00 - 12:40", "options": [{ "subject": "IB Chem2", "room": null }, { "subject": "IB Bio2", "room": null }, { "subject": "IB Phy2", "room": null }] },
-                    { "period": "6", "time": "12:45 - 13:25", "options": [{ "subject": "IB EngB", "room": "Shaun" }] },
-                    { "period": "7", "time": "13:30 - 14:10", "options": [{ "subject": "None", "room": null }] },
-                    { "period": "8", "time": "14:15 - 14:55", "options": [{ "subject": "Nat化学", "room": "G2" }, { "subject": "Nat物理", "room": "G3" }, { "subject": "Nat生物", "room": "HS Theatre" }] },
-                    { "period": "9", "time": "15:00 - 15:40", "options": [{ "subject": "Nat化学", "room": "G2" }, { "subject": "Nat物理", "room": "G3" }, { "subject": "Nat生物", "room": "HS Theatre" }] },
-                    { "period": "10", "time": "15:00 - 15:40", "options": [{ "subject": "IB CS1", "room": "A405" }, { "subject": "IB Bus1", "room": "A401" }, { "subject": "IB Geo1", "room": "A402" }, { "subject": "IB Psy 1", "room": "A422" }] }
-                ]
-            },
-            {
-                "day": "Tuesday",
-                "periods": [
-                    { "period": "1", "time": "8:00 - 8:40", "options": [{ "subject": "None", "room": null }] },
-                    { "period": "2", "time": "8:45 - 9:25", "options": [{ "subject": "Nat心理健康", "room": "Wu Chenhong" }] },
-                    { "period": "3", "time": "9:35 - 10:15", "options": [{ "subject": "IB Econ1", "room": "A403" }, { "subject": "IB Phi1", "room": "A404" }, { "subject": "IB VA1", "room": "A109" }] },
-                    { "period": "4", "time": "10:20 - 11:00", "options": [{ "subject": "IB Econ1", "room": "A403" }, { "subject": "IB Phi1", "room": "A404" }, { "subject": "IB VA1", "room": "A109" }] },
-                    { "period": "5", "time": "11:05 - 11:55", "options": [{ "subject": "IB Chem1", "room": "A403" }, { "subject": "IB Bio1", "room": "A403" }, { "subject": "IB Phy1", "room": "A403" }] },
-                    { "period": "Lunch Period", "time": "12:00 - 12:40", "options": [{ "subject": "Lunch", "room": null }] },
-                    { "period": "6", "time": "12:45 - 13:25", "options": [{ "subject": "IB EngB", "room": "Shaun" }] },
-                    { "period": "7", "time": "13:30 - 14:10", "options": [{ "subject": "IB CS1", "room": "A405" }, { "subject": "IB Bus1", "room": "A401" }, { "subject": "IB Geo1", "room": "A402" }, { "subject": "IB Psy 1", "room": "A422" }] },
-                    { "period": "8", "time": "14:15 - 14:55", "options": [{ "subject": "PE", "room": null }] },
-                    { "period": "9", "time": "15:00 - 15:40", "options": [{ "subject": "IB Math", "room": null }] },
-                    { "period": "10", "time": "15:00 - 15:40", "options": [{ "subject": "None", "room": null }] }
-                ]
-            },
-            {
-                "day": "Wednesday",
-                "periods": [
-                    { "period": "1", "time": "8:00 - 8:40", "options": [{ "subject": "IB Chem1", "room": "A403" }, { "subject": "IB Bio1", "room": "A403" }, { "subject": "IB Phy1", "room": "A403" }] },
-                    { "period": "2", "time": "8:45 - 9:25", "options": [{ "subject": "IB EngB", "room": "Shaun" }] },
-                    { "period": "3", "time": "9:35 - 10:15", "options": [{ "subject": "IB Geo2", "room": "A402" }, { "subject": "IB Bus2", "room": "A401" }, { "subject": "IB His2", "room": "A404" }] },
-                    { "period": "4", "time": "10:20 - 11:00", "options": [{ "subject": "IB VA2", "room": "A109" }, { "subject": "IB Mus2", "room": "A108" }, { "subject": "IB Econ2", "room": "A403" }] },
-                    { "period": "5", "time": "11:05 - 11:55", "options": [{ "subject": "None", "room": null }] },
-                    { "period": "Lunch Period", "time": "12:00 - 12:40", "options": [{ "subject": "Lunch", "room": null }] },
-                    { "period": "6", "time": "12:45 - 13:25", "options": [{ "subject": "IB Chem2", "room": null }, { "subject": "IB Bio2", "room": null }, { "subject": "IB Phy2", "room": null }] },
-                    { "period": "7", "time": "13:30 - 14:10", "options": [{ "subject": "PD", "room": null }] },
-                    { "period": "8", "time": "14:15 - 14:55", "options": [{ "subject": "None", "room": null }] },
-                    { "period": "9", "time": "15:00 - 15:40", "options": [{ "subject": "IB Math", "room": null }] },
-                    { "period": "10", "time": "15:00 - 15:40", "options": [{ "subject": "Nat语文", "room": null }] }
-                ]
-            },
-            {
-                "day": "Thursday",
-                "periods": [
-                    { "period": "1", "time": "8:00 - 8:40", "options": [{ "subject": "Nat历史", "room": "A404" }] },
-                    { "period": "2", "time": "8:45 - 9:25", "options": [{ "subject": "IB EngB", "room": "Shaun" }] },
-                    { "period": "3", "time": "9:35 - 10:15", "options": [{ "subject": "IB Chem1", "room": "A403" }, { "subject": "IB Bio1", "room": "A403" }, { "subject": "IB Phy1", "room": "A403" }] },
-                    { "period": "4", "time": "10:20 - 11:00", "options": [{ "subject": "Nat艺术", "room": "A109" }] },
-                    { "period": "5", "time": "11:05 - 11:55", "options": [{ "subject": "IB Lit", "room": "A411" }, { "subject": "IB L&L", "room": "A411" }] },
-                    { "period": "Lunch Period", "time": "12:00 - 12:40", "options": [{ "subject": "Lunch", "room": null }] },
-                    { "period": "6", "time": "12:45 - 13:25", "options": [{ "subject": "IB Chem2", "room": null }, { "subject": "IB Bio2", "room": null }, { "subject": "IB Phy2", "room": null }] },
-                    { "period": "7", "time": "13:30 - 14:10", "options": [{ "subject": "Nat思政", "room": "A404" }] },
-                    { "period": "8", "time": "14:15 - 14:55", "options": [{ "subject": "PE", "room": null }] },
-                    { "period": "9", "time": "15:00 - 15:40", "options": [{ "subject": "IB Math", "room": null }] },
-                    { "period": "10", "time": "15:00 - 15:40", "options": [{ "subject": "None", "room": null }] }
-                ]
-            },
-            {
-                "day": "Friday",
-                "periods": [
-                    { "period": "1", "time": "8:00 - 8:40", "options": [{ "subject": "Nat语文", "room": null }] },
-                    { "period": "2", "time": "8:45 - 9:25", "options": [{ "subject": "IB Geo2", "room": "A402" }, { "subject": "IB Bus2", "room": "A401" }, { "subject": "IB His2", "room": "A404" }] },
-                    { "period": "3", "time": "9:35 - 10:15", "options": [{ "subject": "Nat地理", "room": "A402" }] },
-                    { "period": "4", "time": "10:20 - 11:00", "options": [{ "subject": "CW", "room": null }, { "subject": "JP", "room": null }, { "subject": "IC", "room": null }, { "subject": "Linguistics", "room": null }] },
-                    { "period": "5", "time": "11:05 - 11:55", "options": [{ "subject": "None", "room": null }] },
-                    { "period": "Lunch Period", "time": "12:00 - 12:40", "options": [{ "subject": "Lunch", "room": null }] },
-                    { "period": "6", "time": "12:45 - 13:25", "options": [{ "subject": "IB Chem2", "room": null }, { "subject": "IB Bio2", "room": null }, { "subject": "IB Phy2", "room": null }] },
-                    { "period": "7", "time": "13:30 - 14:10", "options": [{ "subject": "Class Meeting", "room": null }] },
-                    { "period": "8", "time": "14:15 - 14:55", "options": [{ "subject": "None", "room": null }] },
-                    { "period": "9", "time": "15:00 - 15:40", "options": [{ "subject": "None", "room": null }] },
-                    { "period": "10", "time": "15:00 - 15:40", "options": [{ "subject": "None", "room": null }] }
-                ]
-            }
-        ]
-    }
-};
+        let TIMETABLE_DATA = null;
         const NO_ATTENDANCE = "No Attendance";
         let isDarkMode = true;
         let selectedElectives = {};
         let fontSizeMultiplier = 1.0;
+
+        const loadTimetable = async () => {
+            const res = await fetch('/api/timetable');
+            if (res.ok) {
+                TIMETABLE_DATA = await res.json();
+                const hrSelect = document.getElementById('homeroomSelect');
+                if (hrSelect) hrSelect.innerHTML = `<option>${TIMETABLE_DATA.timetable.class}</option>`;
+                renderElectives();
+                
+                // Load into admin editor if admin
+                if (isAdmin) {
+                    const editor = document.getElementById('timetableEditor');
+                    if (editor) editor.value = JSON.stringify(TIMETABLE_DATA, null, 4);
+                }
+            }
+        };
+
+        // Navigation Logic
+        window.switchView = (viewId) => {
+            document.getElementById('homeView').classList.toggle('hidden', viewId !== 'homeView');
+            document.getElementById('timetableTool').classList.toggle('hidden', viewId !== 'timetableTool');
+            const consoleEl = document.getElementById('adminConsole');
+            if (consoleEl) consoleEl.classList.toggle('hidden', viewId !== 'adminConsole');
+            document.getElementById('actionBar').classList.toggle('hidden', viewId !== 'timetableTool');
+            window.scrollTo(0, 0);
+        };
+
+        // Admin Console Logic
+        window.formatJson = () => {
+            const editor = document.getElementById('timetableEditor');
+            try {
+                const val = JSON.parse(editor.value);
+                editor.value = JSON.stringify(val, null, 4);
+            } catch (e) { alert('Invalid JSON: ' + e.message); }
+        };
+
+        window.saveTimetable = async () => {
+            const editor = document.getElementById('timetableEditor');
+            try {
+                const data = JSON.parse(editor.value);
+                const res = await fetch('/api/timetable/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    alert('Configuration saved successfully!');
+                    TIMETABLE_DATA = data;
+                    renderElectives();
+                } else {
+                    const err = await res.json();
+                    alert('Error: ' + err.message);
+                }
+            } catch (e) { alert('Invalid JSON: ' + e.message); }
+        };
+
+        window.handleAdminFileUpload = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const content = e.target.result;
+                    JSON.parse(content); // Validate
+                    document.getElementById('timetableEditor').value = content;
+                    window.formatJson();
+                } catch (err) { alert('Uploaded file is not a valid JSON'); }
+            };
+            reader.readAsText(file);
+        };
 
         // Font Size Logic
         const sizeSlider = document.getElementById('fontSizeSlider');

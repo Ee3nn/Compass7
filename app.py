@@ -197,6 +197,41 @@ def get_profile():
         "is_admin": user.is_admin
     }), 200
 
+@app.route("/api/timetable", methods=['GET'])
+def get_timetable():
+    try:
+        with open('timetable_data.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+@app.route("/api/timetable/update", methods=['POST'])
+def update_timetable():
+    if 'user_id' not in session:
+        return jsonify({"message": "Unauthorized"}), 401
+    
+    user = db.session.get(User, session['user_id'])
+    if not user or not user.is_admin:
+        return jsonify({"message": "Admin access required"}), 403
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"message": "Invalid JSON"}), 400
+            
+        # Save to main file
+        with open('timetable_data.json', 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+            
+        # Also sync to static file for frontend compatibility if needed
+        with open('static/preibcourses.json', 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+            
+        return jsonify({"message": "Timetable updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
 @app.route("/profile/update", methods=['POST'])
 def update_profile():
     if 'user_id' not in session:
