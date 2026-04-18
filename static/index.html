@@ -590,8 +590,32 @@
         const switchToLogin = document.getElementById('switchToLogin');
 
         let currentUser = localStorage.getItem('mi_user');
+
+        const updateAuthUI = (username, profilePic) => {
+            const span = authBtn.querySelector('span');
+            const navAvatar = document.getElementById('navAvatar');
+            const navUserIcon = document.getElementById('navUserIcon');
+            
+            if (username) {
+                span.innerText = username;
+                if (profilePic) {
+                    navAvatar.src = profilePic;
+                    navAvatar.classList.remove('hidden');
+                    navUserIcon.classList.add('hidden');
+                } else {
+                    navAvatar.classList.add('hidden');
+                    navUserIcon.classList.remove('hidden');
+                }
+            } else {
+                span.innerText = 'Sign In';
+                navAvatar.classList.add('hidden');
+                navUserIcon.classList.remove('hidden');
+            }
+        };
+
+        // Initial UI Update
         if (currentUser) {
-            authBtn.querySelector('span').innerText = currentUser;
+            updateAuthUI(currentUser, localStorage.getItem('mi_avatar'));
         }
 
         const openProfile = async () => {
@@ -613,16 +637,20 @@
                     preview.src = data.profile_pic;
                     preview.classList.remove('hidden');
                     placeholder.classList.add('hidden');
+                    localStorage.setItem('mi_avatar', data.profile_pic);
                 } else {
                     preview.classList.add('hidden');
                     placeholder.classList.remove('hidden');
+                    localStorage.removeItem('mi_avatar');
                 }
+                updateAuthUI(data.username, data.profile_pic);
                 
                 profileModal.classList.remove('hidden');
             } else {
                 localStorage.removeItem('mi_user');
+                localStorage.removeItem('mi_avatar');
                 currentUser = null;
-                authBtn.querySelector('span').innerText = 'Sign In';
+                updateAuthUI(null);
                 authModal.classList.remove('hidden');
             }
         };
@@ -684,7 +712,11 @@
                 if (res.ok) {
                     currentUser = data.username;
                     localStorage.setItem('mi_user', currentUser);
-                    authBtn.querySelector('span').innerText = currentUser;
+                    
+                    if (data.profile_pic) localStorage.setItem('mi_avatar', data.profile_pic);
+                    else localStorage.removeItem('mi_avatar');
+
+                    updateAuthUI(currentUser, data.profile_pic);
                     
                     if (data.electives) {
                         try {
@@ -720,7 +752,7 @@
             if (res.ok) {
                 currentUser = data.username;
                 localStorage.setItem('mi_user', currentUser);
-                authBtn.querySelector('span').innerText = currentUser;
+                updateAuthUI(currentUser, localStorage.getItem('mi_avatar'));
                 alert('Profile updated!');
                 profileModal.classList.add('hidden');
             } else {
@@ -731,8 +763,9 @@
         document.getElementById('btnLogout').onclick = async () => {
             await fetch('/logout');
             localStorage.removeItem('mi_user');
+            localStorage.removeItem('mi_avatar');
             currentUser = null;
-            authBtn.querySelector('span').innerText = 'Sign In';
+            updateAuthUI(null);
             profileModal.classList.add('hidden');
         };
 
@@ -741,8 +774,9 @@
                 const res = await fetch('/profile/delete', { method: 'POST' });
                 if (res.ok) {
                     localStorage.removeItem('mi_user');
+                    localStorage.removeItem('mi_avatar');
                     currentUser = null;
-                    authBtn.querySelector('span').innerText = 'Sign In';
+                    updateAuthUI(null);
                     profileModal.classList.add('hidden');
                     alert('Account deleted.');
                 }
@@ -774,6 +808,9 @@
                 preview.src = data.url;
                 preview.classList.remove('hidden');
                 placeholder.classList.add('hidden');
+                
+                localStorage.setItem('mi_avatar', data.url);
+                updateAuthUI(currentUser, data.url);
             } else {
                 const data = await res.json();
                 alert(data.message);
